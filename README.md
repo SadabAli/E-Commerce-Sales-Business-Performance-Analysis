@@ -1,2 +1,880 @@
-# E-Commerce Sales & Business Performance Analysis
-PostgreSQL + Power BI project analyzing e-commerce sales, customers, products, logistics, payments, reviews, and seller performance through business-focused dashboards and KPIs.
+OLIST E-COMMERCE SALES & BUSINESS PERFORMANCE ANALYSIS MEASURE & PROJECT
+UNDERSTANDING GUIDE
+==============================================================
+
+## PURPOSE OF THIS FILE
+
+This is a quick-reference file for understanding the project without
+opening the Power BI presentation.
+
+Use it for revision before an interview or when reviewing the project
+months later.
+
+For every measure, remember four things:
+
+1.  What does it mean?
+2.  Why did I create it?
+3.  What business question does it answer?
+4.  Where is it used?
+
+## PROJECT STACK
+
+Dataset: Olist Brazilian E-Commerce Public Dataset
+
+Database: PostgreSQL
+
+Reporting: Power BI
+
+Connection: DirectQuery
+
+Main reporting view: bi_fact_sales
+
+Supporting views: - bi_dim_product - bi_fact_order -
+bi_fact_review_latest - bi_payments_order
+
+Date table: DimDate
+
+============================================================== 1.
+PROJECT IN ONE MINUTE
+==============================================================
+
+This project analyzes an e-commerce business using PostgreSQL and Power
+BI.
+
+The source data is split into business tables such as: - Customers -
+Orders - Order Items - Products - Sellers - Payments - Reviews -
+Geolocation - Product Category Translation
+
+PostgreSQL is used to store and prepare the data and create BI views.
+Power BI connects through DirectQuery and is used for DAX measures,
+interactive analysis and reporting.
+
+The project answers business questions about:
+
+SALES - Revenue - Orders - Customers - AOV - Growth
+
+PRODUCTS - Category performance - Product/category revenue - Orders -
+AOV - Ratings
+
+CUSTOMERS - Geographic revenue - State/city performance
+
+LOGISTICS - Delivery time - Late orders - On-time percentage
+
+REVIEWS - Average rating - Positive reviews - Negative reviews - Ratings
+by category - Late vs on-time ratings
+
+PAYMENTS - Payment value - Payment type share - Installments
+
+SELLERS - Top sellers - Revenue per seller - Seller geography -
+Seller/category performance
+
+============================================================== 2. THE
+MOST IMPORTANT MEASURES
+==============================================================
+
+## REVENUE
+
+DAX: Revenue := SUM ( 'public bi_fact_sales'\[price\] )
+
+What it means: Total product price/sales value in the reporting view.
+
+Business question: "How much sales value did the business generate?"
+
+Used for: - Executive Overview - Revenue trends - Category analysis -
+Customer geography - Seller analysis - Many other visuals
+
+Important: In this project, Revenue is based on the "price" field.
+
+  ---------------------------------
+  FREIGHT
+  ---------------------------------
+  DAX: Freight := SUM ( 'public
+  bi_fact_sales'\[freight_value\] )
+
+  What it means: Total freight
+  value.
+
+  Business question: "How much
+  freight value is associated with
+  the sales data?"
+  ---------------------------------
+
+## GMV
+
+DAX: GMV := [Revenue](#revenue) + \[Freight\]
+
+What it means: The project's definition of gross merchandise value is
+product revenue plus freight.
+
+Business question: "What is the total value represented by product price
+plus freight?"
+
+Important: This is the project's definition. GMV can be defined
+differently in different companies.
+
+  ----------------------------
+  ORDERS
+  ----------------------------
+  DAX: Orders := DISTINCTCOUNT
+  ( 'public
+  bi_fact_sales'\[order_id\] )
+
+  What it means: Number of
+  unique orders.
+
+  Why DISTINCTCOUNT? Because
+  one order can contain
+  multiple order-item rows.
+
+  Business question: "How many
+  orders did customers place?"
+
+  This is a very important
+  measure.
+
+  Do NOT use COUNTROWS on the
+  sales view to represent
+  orders if there can be
+  multiple items per order.
+  ----------------------------
+
+## CUSTOMERS
+
+DAX: Customers := DISTINCTCOUNT ( 'public
+bi_fact_sales'\[customer_unique_id\] )
+
+What it means: Number of unique customers.
+
+Business question: "How many distinct customers are represented in the
+analysis?"
+
+Important: The project uses customer_unique_id rather than customer_id
+for customer counting.
+
+  -----------------
+  ITEMS SOLD
+  -----------------
+  DAX: Items Sold
+  := COUNTROWS (
+  'public
+  bi_fact_sales' )
+
+  What it means:
+  Number of rows in
+  the sales view.
+
+  In this project
+  the sales view is
+  item-level, so
+  this represents
+  sales-item
+  records.
+
+  Business
+  question: "How
+  many item records
+  are represented?"
+
+  Do not
+  automatically
+  call this "units
+  sold" unless the
+  source structure
+  supports that
+  interpretation.
+  -----------------
+
+## AOV
+
+AOV = Average Order Value
+
+DAX: AOV := DIVIDE ( [Revenue](#revenue), \[Orders\] )
+
+What does AOV stand for? Average Order Value.
+
+What does it tell us? How much revenue the average order generates.
+
+Formula: AOV = Revenue / Orders
+
+Example: Revenue = 100,000 Orders = 1,000 AOV = 100
+
+Business use: AOV helps explain whether revenue is changing because: -
+the number of orders changed OR - the value per order changed
+
+Very important interview example:
+
+"Suppose revenue falls but orders stay almost the same. I would check
+AOV. If AOV also falls, the problem may be lower basket/order value."
+
+  ----------------------------------------------------------------
+  ITEMS PER ORDER
+  ----------------------------------------------------------------
+  DAX: Items per Order := DIVIDE ( \[Items Sold\], \[Orders\] )
+
+  What it means: Average number of item records per order.
+
+  Business question: "How many items are associated with an
+  average order?"
+
+  Business use: Helps understand basket size.
+
+  ==============================================================
+  3. CUSTOMER / SERVICE METRICS
+  ==============================================================
+
+  AVG RATING
+  ----------------------------------------------------------------
+
+DAX: Avg Rating := AVERAGE ( 'public bi_fact_sales'\[review_score\] )
+
+What it means: Average available review score.
+
+Business question: "How are customers rating the products/orders?"
+
+Important: This is a review-score average, not a general measure of all
+customer satisfaction.
+
+  --------------------------------
+  DELIVERED ORDERS
+  --------------------------------
+  DAX: Delivered Orders :=
+  CALCULATE ( \[Orders\], 'public
+  bi_fact_sales'\[order_status\] =
+  "delivered" )
+
+  What it means: Number of unique
+  orders with delivered status.
+
+  Business question: "How many
+  orders were actually delivered?"
+  --------------------------------
+
+## LATE ORDERS
+
+DAX: Late Orders := CALCULATE ( \[Orders\], 'public
+bi_fact_sales'\[order_status\] = "delivered", 'public
+bi_fact_sales'\[is_late\] = 1 )
+
+What it means: Delivered orders whose actual delivery was after the
+estimated delivery date.
+
+Business question: "How many delivered orders were late?"
+
+  ------------------------
+  ON-TIME %
+  ------------------------
+  DAX: On-time % := DIVIDE
+  ( \[Delivered Orders\] -
+  [Late
+  Orders](#late-orders),
+  \[Delivered Orders\] )
+
+  What it means:
+  Percentage of delivered
+  orders that were not
+  late.
+
+  Formula: On-time % =
+  (Delivered Orders - Late
+  Orders) / Delivered
+  Orders
+
+  Business question: "How
+  reliably are orders
+  being delivered within
+  the estimated date?"
+
+  Business use: This is a
+  service-level KPI.
+
+  If it goes down: -
+  investigate late
+  orders - investigate
+  state/category
+  patterns - investigate
+  logistics issues
+  ------------------------
+
+## LATE %
+
+DAX: Late % := DIVIDE( [Late Orders](#late-orders), \[Delivered Orders\]
+)
+
+What it means: Percentage of delivered orders that were late.
+
+Relationship: On-time % + Late % = approximately 100% when both use the
+same delivered-order population.
+
+  ----------------------------------------------------------------
+  AVG DELIVERY DAYS
+  ----------------------------------------------------------------
+  DAX: Avg Delivery Days := AVERAGE ( 'public
+  bi_fact_sales'\[delivery_days\] )
+
+  What it means: Average number of delivery days represented by
+  the reporting data.
+
+  Business question: "How long does delivery take on average?"
+
+  Use with: - Category - State - Time period
+
+  ==============================================================
+  4. TIME & GROWTH METRICS
+  ==============================================================
+
+  REVENUE YTD
+  ----------------------------------------------------------------
+
+DAX: Revenue YTD := TOTALYTD ( [Revenue](#revenue), DimDate\[Date\] )
+
+YTD stands for: Year To Date.
+
+What it means: Revenue accumulated from the beginning of the selected
+year to the current date in the visual/filter context.
+
+Business question: "How much revenue have we generated so far this
+year?"
+
+  ----------------------
+  REVENUE LY
+  ----------------------
+  DAX: Revenue LY :=
+  CALCULATE (
+  [Revenue](#revenue),
+  SAMEPERIODLASTYEAR (
+  DimDate\[Date\] ) )
+
+  LY stands for: Last
+  Year.
+
+  What it means: Revenue
+  for the comparable
+  previous-year period.
+
+  Business question:
+  "How did we perform
+  during the equivalent
+  period last year?"
+  ----------------------
+
+## YOY %
+
+DAX: YoY % := DIVIDE ( [Revenue](#revenue) - \[Revenue LY\], \[Revenue
+LY\] )
+
+YoY stands for: Year over Year.
+
+What it means: Percentage change in revenue compared with the previous
+year.
+
+Formula: (Current Revenue - Previous Year Revenue) / Previous Year
+Revenue
+
+Business question: "Is revenue growing or declining compared with last
+year?"
+
+  ----------------------------------------------------------------
+  ROLLING 30D REVENUE
+  ----------------------------------------------------------------
+  DAX: Rolling 30D Revenue := CALCULATE( [Revenue](#revenue),
+  DATESINPERIOD ( DimDate\[Date\], MAX ( DimDate\[Date\] ), -30,
+  DAY ) )
+
+  What it means: Revenue during the latest 30-day period relative
+  to the current date context.
+
+  Business question: "What has recent 30-day revenue performance
+  looked like?"
+
+  Why useful: It smooths the focus onto recent performance instead
+  of only using one month.
+
+  ==============================================================
+  5. REVIEW METRICS
+  ==============================================================
+
+  POSITIVE REVIEWS %
+  ----------------------------------------------------------------
+
+DAX concept: Count rows with review_score \>= 4 divided by count of
+nonblank review scores.
+
+What it means: Share of available review records that are positive.
+
+Business question: "What percentage of reviewed orders received a strong
+rating?"
+
+Positive: 4 or 5
+
+  ------------------
+  NEGATIVE REVIEWS %
+  ------------------
+  DAX concept: Count
+  rows with
+  review_score \<= 2
+  divided by count
+  of nonblank review
+  scores.
+
+  What it means:
+  Share of available
+  review records
+  that are negative.
+
+  Negative: 1 or 2
+
+  Business question:
+  "How large is the
+  negative-review
+  group?"
+  ------------------
+
+## REVIEW BUCKET
+
+Categories: - No Review - Positive (4-5) - Neutral (3) - Negative (1-2)
+
+Why: Turns numeric review scores into business-friendly groups.
+
+Used in: Rating Distribution donut chart.
+
+============================================================== 6.
+PAYMENT METRICS
+==============================================================
+
+## PAYMENT VALUE
+
+DAX: Payment Value := SUM ( 'public bi_fact_sales'\[payment_value\] )
+
+What it means: Total payment value represented in the sales reporting
+view.
+
+Business question: "How much payment value is represented by the
+selected payment context?"
+
+Important: Payment Value is not the same field as Revenue.
+
+Revenue uses: price
+
+Payment Value uses: payment_value
+
+  ----------------------------------------------------------------
+  AVG INSTALLMENTS
+  ----------------------------------------------------------------
+  DAX: Avg Installments := AVERAGE ( 'public
+  bi_fact_sales'\[payment_installments\] )
+
+  What it means: Average number of installments in the payment
+  records.
+
+  Business question: "How are payment installments distributed
+  across payment types?"
+
+  Use in: Payments page.
+
+  ==============================================================
+  7. SELLER METRICS
+  ==============================================================
+
+  SELLERS
+  ----------------------------------------------------------------
+
+DAX: Sellers := DISTINCTCOUNT ( 'public bi_fact_sales'\[seller_id\] )
+
+What it means: Number of distinct sellers represented.
+
+Business question: "How many sellers are contributing to the selected
+data?"
+
+  ----------------------------------------------------------------
+  REVENUE PER SELLER
+  ----------------------------------------------------------------
+  DAX: Revenue per Seller := DIVIDE ( [Revenue](#revenue),
+  [Sellers](#sellers) )
+
+  What it means: Average revenue per seller in the current filter
+  context.
+
+  Formula: Revenue / Sellers
+
+  Business question: "How much revenue is generated per seller on
+  average?"
+
+  Important: This is an average, not the revenue of every
+  individual seller.
+
+  ==============================================================
+  8. DRILLTHROUGH MEASURE / TITLE
+  ==============================================================
+
+  DRILL TITLE
+  ----------------------------------------------------------------
+
+Concept: "Drillthrough:" & COALESCE( SELECTEDVALUE(category), "All" )
+
+What it does: Changes the title based on the selected category.
+
+Example: If category = watches_gifts
+
+Title: Drillthrough: watches_gifts
+
+Why: Helps the user understand which selection is currently being
+analyzed.
+
+============================================================== 9.
+MEASURE GROUPS -- QUICK CHEAT SHEET
+==============================================================
+
+## SALES
+
+Revenue Freight GMV Orders Customers Items Sold AOV Items per Order
+
+## SERVICE / LOGISTICS
+
+Delivered Orders Late Orders On-time % Late % Avg Delivery Days
+
+## TIME
+
+Revenue YTD Revenue LY YoY % Rolling 30D Revenue
+
+## REVIEWS
+
+Avg Rating Positive Reviews % Negative Reviews % Review Bucket
+
+## PAYMENTS
+
+Payment Value Avg Installments
+
+## SELLERS
+
+Sellers Revenue per Seller
+
+## DRILLTHROUGH
+
+Drill Title
+
+============================================================== 10. WHERE
+THE MEASURES ARE USED
+==============================================================
+
+## OVERVIEW
+
+Revenue Orders Customers AOV On-time % Avg Rating YoY % Revenue trend
+Orders by month Top categories Revenue by state Order status
+
+## SALES TRENDS
+
+Revenue Revenue LY AOV Orders YoY % Rolling 30D Revenue Revenue YTD
+
+## CATEGORIES & PRODUCTS
+
+Revenue Orders AOV Avg Rating On-time %
+
+## CUSTOMERS
+
+Revenue Orders AOV Avg Rating
+
+## DELIVERY & LOGISTICS
+
+On-time % Late Orders Late % Avg Delivery Days
+
+## REVIEWS
+
+Avg Rating Positive Reviews % Negative Reviews % Orders AOV Late/On-time
+analysis
+
+## PAYMENTS
+
+Payment Value Avg Installments Orders AOV On-time % Avg Rating
+
+## SELLER
+
+Revenue Orders AOV Avg Rating Sellers Revenue per Seller
+
+## DRILLTHROUGH
+
+Revenue Orders AOV Avg Rating On-time % Drill Title
+
+============================================================== 11. WHY
+THESE METRICS WORK TOGETHER
+==============================================================
+
+Do not look at the dashboard metrics as separate numbers.
+
+They answer connected business questions.
+
+Revenue \| +--\> Orders \| +--\> AOV \| +--\> Category \| +--\>
+Geography \| +--\> Seller
+
+Revenue performance can therefore be explained with: "How many orders
+did we get?" + "How much value did each order generate?"
+
+ORDERS \| +--\> Customers \| +--\> Items per Order \| +--\> Category \|
++--\> Geography
+
+LOGISTICS \| +--\> Delivered Orders \| +--\> Late Orders \| +--\>
+On-time % \| +--\> Avg Delivery Days
+
+SERVICE \| +--\> Ratings \| +--\> Positive Reviews \| +--\> Negative
+Reviews \| +--\> Late vs On-time
+
+This lets the analyst connect: SALES -\> OPERATIONS -\> CUSTOMER
+EXPERIENCE.
+
+============================================================== 12.
+PROJECT PAGES WITHOUT PRESENTATION
+==============================================================
+
+## PAGE 1 --- OVERVIEW
+
+Purpose: Executive health check.
+
+Answers: - How much revenue? - How many orders? - How many customers? -
+What is AOV? - What is on-time performance? - What is average rating? -
+How is revenue changing? - Which categories and states matter most? -
+What is the order-status mix?
+
+## PAGE 2 --- SALES TRENDS
+
+Purpose: Understand growth and time trends.
+
+Answers: - How does revenue compare with last year? - What is current
+YTD revenue? - What is recent 30-day revenue? - How do categories
+perform across years?
+
+## PAGE 3 --- CATEGORIES & PRODUCTS
+
+Purpose: Understand category performance and the relationship between
+volume and value.
+
+Answers: - Which categories generate more revenue? - Which have more
+orders? - Which have higher AOV? - Which have better ratings? - What
+does category revenue share look like? - How do Orders and AOV relate?
+
+## PAGE 4 --- CUSTOMERS
+
+Purpose: Understand where customers are and where revenue comes from
+geographically.
+
+Answers: - Which states generate the most revenue? - Which cities
+generate the most revenue? - How does category demand vary by state?
+
+## PAGE 5 --- DELIVERY & LOGISTICS
+
+Purpose: Find delivery-performance problems.
+
+Answers: - How many orders are late? - What is the on-time rate? - Which
+states have high late rates? - Which categories take longer to
+deliver? - How do late orders change over time?
+
+## PAGE 6 --- REVIEWS
+
+Purpose: Understand customer feedback.
+
+Answers: - What is average rating? - What share of reviews is
+positive? - What share is negative? - How does rating differ by
+category? - Are late orders associated with different ratings?
+
+## PAGE 7 --- PAYMENTS
+
+Purpose: Understand payment behavior.
+
+Answers: - Which payment types contribute more payment value? - What is
+payment value over time? - Which methods use more installments? - How do
+payment methods compare on the available KPIs?
+
+## PAGE 8 --- SELLER
+
+Purpose: Understand seller contribution and geography.
+
+Answers: - Who are the top sellers? - What is revenue per seller? -
+Which seller states matter? - Which categories are important in each
+seller state?
+
+## PAGE 9 --- DRILLTHROUGH
+
+Purpose: Provide deeper analysis for a selected category.
+
+Flow: Category page -\> select category -\> drill through -\> filtered
+cards/table/trend
+
+The user does not need a new page for every category.
+
+============================================================== 13.
+BUSINESS PROBLEM -\> MEASURE
+==============================================================
+
+Problem: "Are we growing?"
+
+Use: Revenue Revenue LY YoY % Revenue YTD Rolling 30D Revenue
+
+Problem: "Is growth coming from more orders or higher order value?"
+
+Use: Revenue Orders AOV
+
+Problem: "Which markets are important?"
+
+Use: Revenue Orders AOV Customer State Customer City
+
+Problem: "Are we delivering reliably?"
+
+Use: Delivered Orders Late Orders On-time % Late % Avg Delivery Days
+
+Problem: "Are customers satisfied?"
+
+Use: Avg Rating Positive Reviews % Negative Reviews % Review Bucket
+
+Problem: "Which sellers matter most?"
+
+Use: Sellers Revenue Revenue per Seller Orders AOV
+
+Problem: "Do different categories behave differently?"
+
+Use: Revenue Orders AOV Avg Rating On-time %
+
+============================================================== 14. HOW
+TO DEBUG A MEASURE
+==============================================================
+
+When a number looks wrong:
+
+STEP 1: Check the business definition.
+
+STEP 2: Check the source field.
+
+STEP 3: Check the grain of the source/view.
+
+STEP 4: Check joins in PostgreSQL.
+
+STEP 5: Check whether rows were duplicated.
+
+STEP 6: Run a simple SQL total.
+
+STEP 7: Compare with the DAX measure.
+
+STEP 8: Check Power BI filter context.
+
+STEP 9: Check visual/page/report filters.
+
+Do not immediately rewrite the DAX.
+
+============================================================== 15.
+IMPORTANT JOIN / GRAIN WARNING
+==============================================================
+
+The main reporting view joins sales/order-item data with reviews,
+payments, products, customers and sellers.
+
+Because the original sources can have different grains, joins can create
+duplicate rows if they are not controlled.
+
+This is why the project has:
+
+bi_fact_review_latest -\> review information is reduced to one latest
+review per order
+
+bi_payments_order -\> payment records are aggregated to order level
+
+Interview answer:
+
+"I controlled the grain where needed before combining data, and I would
+validate order counts and financial totals after joins to make sure
+values were not duplicated."
+
+============================================================== 16. QUICK
+DEFINITIONS FOR INTERVIEWS
+==============================================================
+
+Revenue: Sales value represented by product price.
+
+GMV: Project-defined combination of Revenue + Freight.
+
+Order: A distinct order_id.
+
+Customer: A distinct customer_unique_id.
+
+AOV: Average Revenue per Order.
+
+On-time %: Share of delivered orders that were not late.
+
+Late %: Share of delivered orders that were late.
+
+YTD: Year to Date.
+
+LY: Last Year.
+
+YoY: Year over Year.
+
+Rolling 30D: Latest 30-day period relative to the current date context.
+
+Avg Rating: Average review score.
+
+Positive Review: Review score 4 or 5.
+
+Negative Review: Review score 1 or 2.
+
+Revenue per Seller: Average Revenue per distinct seller.
+
+DirectQuery: Power BI queries the source database instead of importing
+the full reporting dataset into the model.
+
+============================================================== 17. THE
+BEST WAY TO PRESENT THE PROJECT
+==============================================================
+
+Do not present it page by page first.
+
+Use this order:
+
+1.  BUSINESS PROBLEM
+2.  DATA
+3.  DATABASE DESIGN
+4.  SQL / BI VIEWS
+5.  POWER BI CONNECTION
+6.  DAX
+7.  REPORT
+8.  INSIGHTS
+9.  DECISIONS
+10. LIMITATIONS / IMPROVEMENTS
+
+Example opening:
+
+"The business had e-commerce data across multiple related tables. I
+wanted to understand sales, customer, logistics, review, payment and
+seller performance. I used PostgreSQL to create the data and BI layer,
+then Power BI with DirectQuery for the reporting layer. The KPIs were
+designed around revenue, orders, customers, AOV, delivery performance,
+ratings and growth."
+
+============================================================== 18. FINAL
+REVISION CHEAT SHEET
+==============================================================
+
+If I forget the project, remember this:
+
+## POSTGRESQL
+
+Stores raw Olist tables ↓ Foreign keys ↓ Indexes ↓ BI Views ↓ Validate
+
+## POWER BI
+
+DirectQuery ↓ DimDate ↓ DAX measures ↓ 9 report pages ↓ Drillthrough ↓
+Performance Analyzer
+
+## BUSINESS STORY
+
+Revenue -\> Orders -\> AOV -\> Categories -\> Geography -\> Sellers
+
+Operations -\> Delivery -\> Late Orders -\> On-time %
+
+Customer Experience -\> Reviews -\> Ratings
+
+Payments -\> Payment Value -\> Installments
+
+## FINAL INTERVIEW MINDSET
+
+A dashboard is the final output.
+
+The real project is:
+
+Business Problem ↓ Data ↓ Grain ↓ SQL ↓ BI Views ↓ Validation ↓ Power BI
+↓ DAX ↓ Visual Analysis ↓ Insight ↓ Business Decision

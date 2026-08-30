@@ -6,7 +6,7 @@
 
 4. Load CSV data into raw tables (COPY / pgAdmin import) & run the Foreign Key Query.
 
-5. Validate data (row counts, null checks, sample select, keys uniqueness).
+5. Validate data (row counts, null checks, sample select, keys uniqueness).{not required cuz this dataset is already clean}
 
 6. Create required indexes on join/filter columns (order_id, customer_id, product_id, seller_id, purchase_timestamp, etc.).
 
