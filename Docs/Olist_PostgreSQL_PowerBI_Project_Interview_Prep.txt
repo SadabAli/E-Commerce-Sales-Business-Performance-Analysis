@@ -1,0 +1,870 @@
+OLIST E-COMMERCE SALES & BUSINESS PERFORMANCE ANALYSIS
+POSTGRESQL + POWER BI
+INTERVIEW / PROJECT EXPLANATION NOTES
+============================================================
+
+PURPOSE
+-------
+Use this file to explain the project from a PROBLEM-SOLVING point of view,
+not as a list of dashboard visuals.
+
+Main story:
+Business Problem -> Data -> Grain -> PostgreSQL -> BI Views -> Validation
+-> Power BI DirectQuery -> DAX -> Dashboard -> Insights -> Decisions
+
+
+1. PROJECT IN ONE SENTENCE
+--------------------------
+I built an e-commerce sales and business performance analysis solution using
+PostgreSQL and Power BI on the Olist Brazilian e-commerce dataset. The goal was
+to understand revenue, orders, customers, products, delivery performance,
+reviews, payments, geography and seller performance.
+
+
+2. BUSINESS PROBLEM
+-------------------
+The raw Olist data is split across multiple related tables. Looking at raw
+tables separately makes it difficult to answer business questions quickly.
+
+The project solves questions such as:
+
+SALES:
+- How much revenue is generated?
+- How many orders and customers are there?
+- How is revenue changing over time?
+- How is current performance compared with last year?
+- What is the average order value?
+
+PRODUCTS / CATEGORIES:
+- Which categories generate the most revenue?
+- Which categories get the most orders?
+- Which categories have a higher AOV?
+- Which categories have stronger ratings?
+- Which categories have better delivery performance?
+
+CUSTOMERS / GEOGRAPHY:
+- Which states and cities are the biggest markets?
+- Where is revenue concentrated?
+- Does category demand change by state?
+
+LOGISTICS:
+- What percentage of delivered orders are on time?
+- How many orders are late?
+- Which states have higher late rates?
+- Which categories take longer to deliver?
+
+REVIEWS:
+- What is the average rating?
+- What share of reviews is positive or negative?
+- Are ratings different for late and on-time orders?
+
+PAYMENTS:
+- Which payment types contribute most payment value?
+- How many installments are used on average?
+- How does payment value change over time?
+
+SELLERS:
+- Which sellers generate the most revenue?
+- How much revenue is generated per seller?
+- Which seller states contribute most revenue?
+- Which categories are important in each seller region?
+
+
+3. HOW I WOULD EXPLAIN THE PROJECT
+---------------------------------
+"I started with the Olist public e-commerce dataset, which contains separate
+tables for customers, orders, order items, products, sellers, payments,
+reviews, geolocation and category translation.
+
+I first created the PostgreSQL database and raw tables. I loaded the CSV files,
+validated the data, added foreign keys to preserve relationships and created
+indexes on important join and filter columns.
+
+Then I built BI views in PostgreSQL so the reporting layer did not have to
+repeat the same joins. I created product, order, review and sales-oriented
+views and tested them in SQL.
+
+After that I connected Power BI to PostgreSQL using DirectQuery. I created a
+Date table, built relationships, created DAX measures and designed report
+pages for sales, categories, customers, logistics, reviews, payments, sellers
+and drillthrough analysis.
+
+Finally, I checked the report with Performance Analyzer and looked at slow
+DirectQuery operations.
+
+The main purpose was to turn raw relational data into business information
+that helps management understand where revenue comes from and where service
+or operational problems may exist."
+
+
+4. DATA / GRAIN
+---------------
+Important raw tables and their grain:
+
+Customers:
+One row = one customer record.
+
+Orders:
+One row = one order.
+
+Order Items:
+One row = one item within an order.
+
+Products:
+One row = one product.
+
+Sellers:
+One row = one seller.
+
+Payments:
+One row = one payment record.
+
+Reviews:
+One row = one review record.
+
+Why grain matters:
+"If I do not understand grain, I can create a wrong join and double count
+orders, revenue or payments."
+
+Example:
+One order can have many order items.
+One order can also have multiple payment rows.
+Therefore, joining tables without controlling grain can multiply rows.
+
+
+5. WHY POSTGRESQL?
+------------------
+I used PostgreSQL as the relational data layer.
+
+Reasons:
+- Store the raw tables.
+- Keep different business entities separate.
+- Join related data.
+- Create reusable analytical views.
+- Add indexes.
+- Validate data before reporting.
+- Keep reporting logic organized.
+
+Simple explanation:
+"PostgreSQL prepares the data; Power BI presents and analyzes it."
+
+
+6. RAW TABLE STRUCTURE
+----------------------
+The database contains:
+
+- olist_customers_dataset
+- olist_geolocation_dataset
+- olist_products_dataset
+- olist_sellers_dataset
+- olist_orders_dataset
+- olist_order_items_dataset
+- olist_order_payments_dataset
+- olist_order_reviews_dataset
+- product_category_name_translation
+
+The table creation and relationships follow the uploaded project setup.
+
+
+7. WHY FOREIGN KEYS?
+--------------------
+Important relationships include:
+
+Orders -> Customers
+Order Items -> Orders
+Order Items -> Products
+Order Items -> Sellers
+Payments -> Orders
+Reviews -> Orders
+
+Business explanation:
+"Foreign keys protect referential integrity. For example, an order item should
+refer to a valid order."
+
+
+8. WHY INDEXES?
+---------------
+Indexes were created on important join/filter columns such as:
+- order_id
+- customer_id
+- product_id
+- seller_id
+- purchase timestamp
+- customer state
+- payment/review order_id
+
+Explanation:
+"Indexes can help PostgreSQL find matching rows faster for joins and filters."
+
+Important:
+Do not say indexes always make every query faster.
+
+
+9. WHY BI VIEWS?
+----------------
+Main views created:
+
+- bi_dim_product
+- bi_fact_order
+- bi_fact_sales
+- bi_fact_review_latest
+- bi_payments_order
+
+Explanation:
+"I created a BI layer so common joins and transformations are prepared once
+in PostgreSQL instead of being repeated inside many Power BI visuals."
+
+bi_dim_product:
+Combines product information with the English category translation and also
+calculates product volume.
+
+bi_fact_order:
+Creates an order-level reporting view with purchase date, delivery date,
+delivery days, late flag and customer details.
+
+bi_fact_review_latest:
+Keeps the latest review per order using the project's design.
+
+bi_fact_sales:
+Creates the main reporting dataset by combining order-item data with order,
+customer, product/category, review, payment and seller information.
+
+bi_payments_order:
+Aggregates payment rows to order level and provides order payment value,
+installments and a selected payment type.
+
+
+10. IMPORTANT GRAIN / JOIN WARNING
+---------------------------------
+bi_fact_sales combines several sources.
+
+This is powerful, but it creates a potential duplication risk if one-to-many
+tables are joined without first controlling the grain.
+
+For example:
+- One order can have several order items.
+- One order can have several payment rows.
+- Review records can have multiple rows.
+
+Therefore an interviewer may ask:
+"How did you avoid double counting?"
+
+Answer:
+"I paid attention to table grain and created order-level views such as the
+latest-review and aggregated-payment views. I would always validate row counts,
+order counts and financial totals after each major join."
+
+
+11. WHY DIRECTQUERY?
+--------------------
+Power BI uses PostgreSQL through DirectQuery.
+
+Explanation:
+"DirectQuery keeps PostgreSQL as the source and sends queries to the database
+when the report needs data. This suited the database-first architecture of
+the project."
+
+Import:
+Data is loaded into the Power BI model.
+
+DirectQuery:
+Power BI queries the source database.
+
+In this project:
+PostgreSQL = data/SQL layer
+Power BI = semantic/reporting layer
+
+
+12. WHY DimDate?
+---------------
+I created a Date table with:
+- Date
+- Year
+- Month No
+- Month
+- Year-Month
+- Quarter
+- Weekday No
+- Weekday
+- Month Start
+
+Relationship:
+DimDate[Date] 1 -> * bi_fact_sales[purchase_date]
+
+Why:
+"A dedicated Date table makes time analysis consistent and supports measures
+such as YTD, prior-year comparison and rolling periods."
+
+
+13. CORE KPIs
+-------------
+Revenue:
+SUM(price)
+
+Business question:
+"How much product sales value is represented in the sales view?"
+
+Freight:
+SUM(freight_value)
+
+GMV:
+Revenue + Freight
+
+Important:
+This is the project's definition. Do not claim this is the only definition of
+GMV.
+
+Orders:
+DISTINCTCOUNT(order_id)
+
+Customers:
+DISTINCTCOUNT(customer_unique_id)
+
+Items Sold:
+COUNTROWS(bi_fact_sales)
+
+AOV:
+Revenue / Orders
+
+Items per Order:
+Items Sold / Orders
+
+Avg Rating:
+AVERAGE(review_score)
+
+
+14. DELIVERY KPIs
+-----------------
+Delivered Orders:
+Distinct delivered orders.
+
+Late Orders:
+Delivered orders where is_late = 1.
+
+On-time %:
+(Delivered Orders - Late Orders) / Delivered Orders
+
+Business problem:
+"Are customers receiving their orders by the estimated delivery date?"
+
+This metric is useful because it gives a clear service-level view.
+
+
+15. TIME ANALYSIS
+-----------------
+Revenue YTD:
+Revenue accumulated year to date.
+
+Revenue LY:
+Previous-year revenue for the comparable period.
+
+YoY %:
+(Current Revenue - Previous Year Revenue) / Previous Year Revenue.
+
+Rolling 30D Revenue:
+Revenue over a recent 30-day period.
+
+Business questions:
+- Is revenue growing?
+- Is growth better or worse than last year?
+- What is recent revenue performance?
+
+
+16. REVIEW ANALYSIS
+-------------------
+Positive Reviews %:
+Review records with score >= 4 / nonblank review records.
+
+Negative Reviews %:
+Review records with score <= 2 / nonblank review records.
+
+Review Bucket:
+- No Review
+- Positive (4-5)
+- Neutral (3)
+- Negative (1-2)
+
+Business questions:
+- Are customers generally satisfied?
+- How large is the negative-review group?
+- Do some categories have weaker ratings?
+- Are late deliveries associated with lower ratings?
+
+Important:
+Association is not proof of causation.
+
+
+17. PAYMENT ANALYSIS
+--------------------
+Payment Value:
+SUM(payment_value)
+
+Avg Installments:
+Average payment installments.
+
+Questions:
+- Which payment methods contribute most payment value?
+- Which methods use more installments?
+- How does payment value change over time?
+
+
+18. CUSTOMER / GEOGRAPHY ANALYSIS
+---------------------------------
+The report analyzes:
+- Top states by revenue
+- Top cities by revenue
+- State x category revenue/orders
+
+Questions:
+- Where are the main customer markets?
+- Where is revenue concentrated?
+- Does category performance vary by geography?
+
+Potential decisions:
+- Regional sales focus
+- Market planning
+- Logistics prioritization
+
+
+19. SELLER ANALYSIS
+-------------------
+Measures:
+Sellers = DISTINCTCOUNT(seller_id)
+Revenue per Seller = Revenue / Sellers
+
+Questions:
+- Who are the largest sellers?
+- Is revenue concentrated among a small number of sellers?
+- Which seller regions are important?
+- Which categories drive seller revenue?
+
+Possible business concern:
+High seller concentration can create dependency risk.
+
+
+20. LOGISTICS ANALYSIS
+----------------------
+Metrics:
+- On-time %
+- Late Orders
+- Late %
+
+Questions:
+- Which states have the highest late rate?
+- Which categories take longer to deliver?
+- Is late delivery improving or worsening?
+
+Possible action:
+Focus logistics analysis on the regions/categories with the highest late rates.
+
+
+21. CATEGORY ANALYSIS
+---------------------
+The report includes:
+- Top 20 categories
+- Top categories by rating
+- AOV vs Orders
+- Category revenue share
+- Category x year
+
+Why AOV vs Orders?
+A category can have high orders but low AOV, or low orders but high AOV.
+
+Business question:
+"Is category performance driven by volume, order value, or both?"
+
+
+22. REPORT PAGES
+----------------
+Overview:
+Executive health check of revenue, orders, customers, AOV, delivery, ratings,
+trends, categories, geography and order status.
+
+Sales Trends:
+Revenue vs last year, rolling 30-day revenue, YTD revenue and category-year
+comparison.
+
+Categories and Products:
+Category revenue, AOV, orders, ratings and revenue share.
+
+Customers:
+Customer geography through states and cities, plus state x category analysis.
+
+Delivery and Logistics:
+Delivery time, on-time %, late orders and late rates by state/category.
+
+Reviews:
+Rating distribution, average rating and late vs on-time rating analysis.
+
+Payments:
+Payment value, payment type share, installments and payment trends.
+
+Seller:
+Top sellers, seller revenue, seller geography and seller/category analysis.
+
+Drill Through:
+Allows the user to select a category and open a filtered detail page with
+category-specific KPIs, table and trend.
+
+
+23. WHY DIFFERENT VISUALS?
+--------------------------
+Line chart:
+Best for change over time.
+
+Bar chart:
+Best for ranking and comparing categories, states or sellers.
+
+Column chart:
+Useful for month-by-month comparisons.
+
+Treemap:
+Useful for showing category revenue share.
+
+Scatter:
+Useful for comparing two measures such as Orders and AOV together.
+
+Matrix:
+Useful for detailed two-dimensional comparisons such as Category x Year.
+
+Map:
+Useful when geography itself is part of the business question.
+
+Card:
+Used for key KPIs.
+
+
+24. HOW TO EXPLAIN A VISUAL
+---------------------------
+Bad:
+"I used a bar chart for categories."
+
+Better:
+"I used a bar chart because the question was which categories contribute
+the most revenue. Ranking categories makes that comparison easy."
+
+Bad:
+"I used a line chart."
+
+Better:
+"I used a line chart because the question was how revenue changes over time."
+
+
+25. DAX QUESTIONS
+-----------------
+Q: Why measures instead of calculated columns?
+
+A:
+"Measures are evaluated according to filter context, so they are better for
+dynamic KPIs."
+
+Q: What is CALCULATE?
+
+A:
+"It evaluates an expression after changing the filter context."
+
+Q: Why DISTINCTCOUNT for Orders?
+
+A:
+"Because one order can have multiple item rows. Counting rows would overcount
+orders."
+
+Q: Why AOV?
+
+A:
+"Revenue alone does not explain whether growth comes from more orders or
+higher order value. AOV helps separate those effects."
+
+Q: Why DATESINPERIOD?
+
+A:
+"To define rolling time windows such as the last 30 days."
+
+
+26. PRODUCT-BASED COMPANY QUESTIONS
+-----------------------------------
+Q: Revenue is down. What would you check first?
+
+A:
+"First I would separate revenue into Orders and AOV. Then I would check
+category, geography and seller performance."
+
+Q: Orders are stable but revenue is down. What could explain it?
+
+A:
+"AOV may have fallen. I would compare order value, category mix and product
+mix."
+
+Q: Revenue is growing but on-time delivery is falling. What does that mean?
+
+A:
+"Business growth may be putting pressure on logistics. I would check late
+orders by state, category and time period."
+
+Q: Ratings are falling. What would you investigate?
+
+A:
+"I would compare rating by category, state and late vs on-time orders and look
+for patterns."
+
+Q: One category has high orders but low AOV. What does that mean?
+
+A:
+"The category has strong volume but lower value per order. The business needs
+to decide whether the goal is volume, margin or increasing basket size."
+
+Q: One seller produces a large share of revenue. Why care?
+
+A:
+"There is seller concentration risk. A problem with that seller could affect
+overall revenue."
+
+
+27. HOW TO HANDLE DATA QUALITY QUESTIONS
+----------------------------------------
+Q: What if there are duplicates?
+
+A:
+"First define the expected grain. Then determine whether the duplicate is a
+real duplicate or a legitimate repeated business event."
+
+Q: What if there are nulls?
+
+A:
+"I first understand why the value is missing. Missing data may be valid, such
+as a delivery date for an order that has not been delivered."
+
+Q: How do you validate a BI view?
+
+A:
+"I compare row counts, distinct order counts, sample records and financial
+totals with trusted source queries."
+
+
+28. PERFORMANCE ANALYZER
+-------------------------
+The project uses DirectQuery, so performance matters.
+
+The uploaded Performance Analyzer data shows that some visuals take several
+seconds in DirectQuery execution.
+
+One example is the Revenue Trends visual, where the main query execution is
+around several seconds and dominates the visual's total load time.
+
+The rating and KPI card visuals also show multi-second query activity.
+
+Interview answer:
+"I used Performance Analyzer to identify slow visuals. Because the report
+uses DirectQuery, a visual can trigger database queries. I would optimize
+both the PostgreSQL layer and the Power BI report."
+
+Possible improvements:
+- Reduce unnecessary visuals.
+- Avoid overly high-cardinality fields.
+- Reduce unnecessary cross-filtering.
+- Push expensive joins/transformations into PostgreSQL.
+- Keep BI views efficient.
+- Ensure indexes support common joins/filters.
+- Optimize DAX.
+- Check PostgreSQL query plans for slow queries.
+
+
+29. IMPORTANT PROJECT LIMITATIONS
+---------------------------------
+Current project has strong database/reporting practice, but it is important to
+be honest about its limits.
+
+- The main reporting layer is centered around BI views rather than a large
+  enterprise semantic model.
+- DirectQuery performance needs attention for some visuals.
+- KPI definitions such as GMV and retention must be treated as project
+  definitions, not universal company definitions.
+- Combining multiple one-to-many sources into one sales view requires careful
+  validation against duplication.
+- The project is based on a public dataset, not a real company's internal data.
+
+
+30. IF ASKED: "HOW WOULD YOU IMPROVE THIS PROJECT?"
+---------------------------------------------------
+Answer:
+
+"I would first validate the final fact-view grain and make sure no joins can
+duplicate revenue or payment values.
+
+Then I would review the dimensional model and create dedicated dimensions
+where they add value, especially Date, Customer, Product, Seller and Payment.
+
+I would push reusable transformations into PostgreSQL or Power Query based on
+where they are most appropriate.
+
+I would also improve KPI definitions with stakeholder agreement and optimize
+the slowest DirectQuery visuals using Performance Analyzer and PostgreSQL
+query analysis."
+
+
+31. IF ASKED: "WHY NOT DO EVERYTHING IN POWER BI?"
+--------------------------------------------------
+"PostgreSQL is better suited for relational joins, reusable views and database
+level preparation. Power BI is better for the reporting and semantic layer.
+Keeping those responsibilities separated makes the solution easier to manage."
+
+
+32. IF ASKED: "WHY NOT DO EVERYTHING IN SQL?"
+----------------------------------------------
+"SQL is excellent for data preparation and source analysis, but Power BI adds
+interactive filtering, visual analysis and dynamic DAX measures."
+
+
+33. BUSINESS INSIGHT FORMAT
+---------------------------
+Never stop at:
+"State X has the highest revenue."
+
+Use:
+
+Observation:
+What happened?
+
+Business meaning:
+Why does it matter?
+
+Action:
+What should the business consider doing?
+
+Example:
+"State X contributes the largest revenue, so changes in that market can have
+a bigger impact on total business revenue. I would monitor sales and delivery
+performance there closely."
+
+
+34. MOST IMPORTANT THING TO SAY IN AN INTERVIEW
+-----------------------------------------------
+"I did not build the dashboard first. I first understood the business problem,
+the data and the grain. Then I prepared the data, created the analytical
+layer, calculated KPIs and used visuals to answer business questions."
+
+
+35. 2-MINUTE PROJECT ANSWER
+---------------------------
+"I built an e-commerce sales and business performance analysis project using
+PostgreSQL and Power BI on the Olist Brazilian e-commerce dataset.
+
+The business problem was to turn multiple operational tables into a single
+analysis layer that could answer questions about revenue, orders, customers,
+categories, delivery, reviews, payments, geography and sellers.
+
+I first created PostgreSQL tables for the Olist data, loaded the CSVs, added
+foreign keys and indexes, and validated the data.
+
+Then I created BI views in PostgreSQL. For example, I created an order-level
+view for delivery analysis, a product view with translated categories, a
+latest-review view and a sales-oriented view that combines the required data
+for reporting.
+
+I connected Power BI to PostgreSQL using DirectQuery. I created a Date table,
+set up the relationship with purchase date, and created DAX measures for
+Revenue, Orders, Customers, AOV, On-time %, Average Rating, YoY %, rolling
+revenue, review and payment metrics.
+
+The report has nine pages: Overview, Sales Trends, Categories and Products,
+Customers, Delivery and Logistics, Reviews, Payments, Seller and Drill
+Through.
+
+Instead of only showing charts, I used the report to answer business
+questions such as where revenue comes from, which categories and sellers are
+important, where delivery is late, how customers rate the service, and how
+performance changes over time.
+
+I also checked DirectQuery performance using Performance Analyzer. For a
+production version, I would further validate fact-view grain, improve the
+dimensional model where useful, refine KPI definitions with stakeholders and
+optimize the slowest database/report queries."
+
+
+36. 30-SECOND VERSION
+---------------------
+"I built a PostgreSQL and Power BI e-commerce analysis solution using the
+Olist dataset. PostgreSQL was used for the relational data layer, indexes,
+joins and BI views, while Power BI was used for DirectQuery reporting, DAX
+and interactive analysis. The report covers sales, customers, products,
+delivery, reviews, payments, geography and sellers. The main goal was to
+answer business questions and identify where revenue and operational issues
+are concentrated."
+
+
+37. FINAL REVISION CHECKLIST
+----------------------------
+I should be able to explain:
+
+[ ] What business problem the project solves
+[ ] Who could use the dashboard
+[ ] Grain of Orders
+[ ] Grain of Order Items
+[ ] Grain of Payments
+[ ] Grain of Reviews
+[ ] Why PostgreSQL
+[ ] Why foreign keys
+[ ] Why indexes
+[ ] Why BI views
+[ ] What each BI view does
+[ ] Why DirectQuery
+[ ] Why DimDate
+[ ] Revenue
+[ ] GMV
+[ ] Orders
+[ ] Customers
+[ ] AOV
+[ ] On-time %
+[ ] Late Orders
+[ ] YoY %
+[ ] Rolling 30D Revenue
+[ ] Review metrics
+[ ] Payment metrics
+[ ] Seller metrics
+[ ] Why each visual type was chosen
+[ ] Why drillthrough is useful
+[ ] Filter context
+[ ] CALCULATE
+[ ] DISTINCTCOUNT
+[ ] DIVIDE
+[ ] DATESINPERIOD
+[ ] SQL join duplication risk
+[ ] How I validated data
+[ ] DirectQuery performance
+[ ] Main project limitation
+[ ] What I would improve
+[ ] 5 real observations from the final dashboard
+[ ] 3 business recommendations
+
+
+FINAL MENTAL MODEL
+------------------
+Business Question
+       ↓
+Understand Data
+       ↓
+Understand Grain
+       ↓
+Prepare Data
+       ↓
+SQL / BI Views
+       ↓
+Validate
+       ↓
+Power BI Model
+       ↓
+DAX
+       ↓
+Visualize
+       ↓
+Find Pattern
+       ↓
+Business Insight
+       ↓
+Decision
+
+The goal is not to say:
+"I made a dashboard."
+
+The goal is to say:
+"I used data to answer a business problem."
