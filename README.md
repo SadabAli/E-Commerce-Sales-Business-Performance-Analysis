@@ -16,6 +16,44 @@ For every measure, remember four things:
 3.  What business question does it answer?
 4.  Where is it used?
 
+## Dashboard Preview
+### Over View(Page-01)
+<img width="1362" height="788" alt="Screenshot 2026-09-01 222016" src="https://github.com/user-attachments/assets/2c1781a7-d56f-43a2-a30e-ea68c539bca5" />
+
+
+### Sales Trends(Page-02)
+<img width="1344" height="717" alt="Screenshot 2026-09-01 222029" src="https://github.com/user-attachments/assets/3a7e6073-c40e-4414-b1f3-319b19b41398" />
+
+
+### Categories and Products(Page-03)
+<img width="1333" height="744" alt="Screenshot 2026-09-01 222039" src="https://github.com/user-attachments/assets/75f914bf-5726-46dd-bcf3-221fd4dc9e21" />
+
+
+### Custormers(Page-04)
+<img width="1328" height="722" alt="Screenshot 2026-09-01 222050" src="https://github.com/user-attachments/assets/13a9f078-ca51-4a48-b9ab-748bf3a2449f" />
+
+
+### Delivary and Logistics(Page-05)
+<img width="1329" height="742" alt="Screenshot 2026-09-01 222059" src="https://github.com/user-attachments/assets/0721b001-429f-4951-8e9c-ebf71fb289a3" />
+
+
+### Reviews(Page-06)
+<img width="1323" height="749" alt="Screenshot 2026-09-01 222110" src="https://github.com/user-attachments/assets/55bc1911-0e6d-4548-bed3-b55d52b098b2" />
+
+
+### Payments(Page-07)
+<img width="1332" height="745" alt="Screenshot 2026-09-01 222121" src="https://github.com/user-attachments/assets/2f59e4d2-6a22-4a6f-a67e-29abd1bed614" />
+
+
+### Seller(Page-08)
+<img width="1325" height="743" alt="Screenshot 2026-09-01 222132" src="https://github.com/user-attachments/assets/a462ea9e-c4f0-47e1-8db7-9cae0334078e" />
+
+
+### Drill Through(Page-09)
+<img width="1333" height="747" alt="Screenshot 2026-09-01 222146" src="https://github.com/user-attachments/assets/a9eff2c5-d04c-4552-8b3d-ae7003c376d1" />
+
+
+
 ## PROJECT STACK
 
 Dataset: Olist Brazilian E-Commerce Public Dataset
